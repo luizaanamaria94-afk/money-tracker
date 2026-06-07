@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="BCR Tracker"/>
+<title>BCR Tracker</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='28' fill='%23f5c842'/%3E%3Ctext x='90' y='122' text-anchor='middle' font-size='90'%3E🏦%3C/text%3E%3C/svg%3E"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;font-family:'Palatino Linotype',Palatino,Georgia,serif;}
+body{background:#08080f;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;max-width:600px;margin:0 auto;}
+#content{flex:1;overflow-y:auto;padding:20px 14px 90px;}
+.page{display:none;}.page.active{display:block;}
+.card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:18px 16px;margin-bottom:14px;}
+.lbl{font-size:10px;letter-spacing:0.25em;text-transform:uppercase;color:#5b6475;margin-bottom:8px;display:block;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+.pbar{background:#0f1117;border-radius:100px;height:8px;overflow:hidden;margin:12px 0 4px;}
+.pfill{height:100%;border-radius:100px;background:linear-gradient(90deg,#f5c842,#6ee7b7);transition:width .8s;}
+.ms-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08);}
+.ms-crossed{text-align:center;padding:5px;margin:5px 0;background:rgba(245,200,66,0.08);border-radius:8px;font-size:11px;color:#f5c842;}
+.pr{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.lrow{display:flex;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);gap:8px;}
+.mbar{background:#0f1117;border-radius:100px;height:5px;overflow:hidden;flex:1;}
+.mfill{height:100%;border-radius:100px;}
+.uzone{border:1px dashed rgba(245,200,66,0.25);position:relative;text-align:center;cursor:pointer;padding:14px 16px;border-radius:16px;margin-bottom:14px;}
+.uzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+input[type=number],input[type=text],input[type=date]{background:#0f1117;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#e2e8f0;padding:10px 12px;font-size:14px;width:100%;font-family:inherit;}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0.3);}
+.bg{background:linear-gradient(135deg,#f5c842,#fbbf24);border:none;border-radius:8px;color:#08080f;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.bo{background:rgba(245,200,66,0.12);border:1px solid rgba(245,200,66,0.25);color:#f5c842;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:inherit;}
+.br{background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.25);color:#f87171;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:inherit;}
+.bs{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#e2e8f0;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;}
+.strow{display:flex;gap:6px;margin-bottom:14px;}
+.st{flex:1;padding:7px 4px;border-radius:100px;font-size:11px;cursor:pointer;font-family:inherit;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#6b7280;}
+.st.active{background:rgba(245,200,66,0.12);border-color:rgba(245,200,66,0.35);color:#f5c842;}
+.nav-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;background:rgba(8,8,15,0.96);border-top:1px solid rgba(255,255,255,0.08);display:flex;z-index:100;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+.nb{flex:1;background:transparent;border:none;border-top:2px solid transparent;color:#4b5563;padding:10px 2px 8px;font-size:8px;letter-spacing:0.05em;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.nb.active{background:rgba(245,200,66,0.1);border-top-color:#f5c842;color:#f5c842;}
+.ni{font-size:16px;}
+.ov{display:none;position:fixed;inset:0;background:rgba(8,8,15,0.93);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+.ov.show{display:flex;}
+.sp{width:46px;height:46px;border:4px solid rgba(245,200,66,0.2);border-top-color:#f5c842;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ti{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.08);}
+.tic{font-size:16px;width:30px;height:30px;background:rgba(255,255,255,0.06);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tid{font-size:12px;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tia{font-size:13px;font-weight:700;color:#f87171;white-space:nowrap;}
+.cr{color:#6ee7b7;}
+.db{display:inline-block;font-size:10px;color:#6b7280;background:rgba(255,255,255,0.05);border-radius:8px;padding:1px 6px;margin-top:1px;}
+select.cs{font-size:10px;padding:3px 5px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#e2e8f0;margin-top:2px;font-family:inherit;max-width:170px;}
+.ci{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.cn{font-size:11px;color:#e2e8f0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cbw{width:60px;background:rgba(255,255,255,0.06);border-radius:6px;height:6px;overflow:hidden;}
+.cb{height:100%;border-radius:6px;transition:width .5s;}
+.ca{font-size:12px;font-weight:700;width:55px;text-align:right;}
+.cp{font-size:10px;color:#6b7280;width:26px;text-align:right;}
+.warn{border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;}
+.info{border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:12px;background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.25);color:#fde68a;}
+.dl{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.dp{flex-shrink:0;padding:4px 12px;border-radius:100px;font-size:11px;cursor:pointer;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#6b7280;}
+.dp.active{background:rgba(245,200,66,0.12);border-color:rgba(245,200,66,0.35);color:#f5c842;}
+::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:#08080f;}::-webkit-scrollbar-thumb{background:#1f2937;border-radius:2px;}
+</style>
+</head>
+<body>
+<div id="content">
+  <div id="page-home" class="page active"></div>
+  <div id="page-credit" class="page"></div>
+  <div id="page-extras" class="page"></div>
+  <div id="page-txn" class="page"></div>
+  <div id="page-datorii" class="page"></div>
+  <div id="page-settings" class="page"></div>
+</div>
+<nav class="nav-bar">
+  <button class="nb active" onclick="setTab('home')" id="nav-home"><span class="ni">🏠</span><span>HOME</span></button>
+  <button class="nb" onclick="setTab('credit')" id="nav-credit"><span class="ni">📉</span><span>CREDIT</span></button>
+  <button class="nb" onclick="setTab('extras')" id="nav-extras"><span class="ni">💳</span><span>EXTRAS</span></button>
+  <button class="nb" onclick="setTab('txn')" id="nav-txn"><span class="ni">📋</span><span>TRANZACȚII</span></button>
+  <button class="nb" onclick="setTab('datorii')" id="nav-datorii"><span class="ni">🤝</span><span>DATORII</span></button>
+  <button class="nb" onclick="setTab('settings')" id="nav-settings"><span class="ni">⚙️</span><span>SETĂRI</span></button>
+</nav>
+<div class="ov" id="overlay">
+  <div class="sp"></div>
+  <div style="font-size:14px;color:#f5c842;font-weight:600">Citesc PDF-ul BCR...</div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ── CONSTANTS ──────────────────────────────────────────────────────────────────
+var INITIAL_LOAN=199277;
+var MONTHLY_SURPLUS=7700;
+var SEED_BALANCE=149803.42;
+var SEED_DATE="03 Iun 2026";
+var ORIG_END="2035-05";
+
+var SEED_SCHED=[
+  {nr:1,date:"2026-06-10",principal:1112.22,interest:578.03,insurance:38.95,total:1729.20,balance:148691.20},
+  {nr:2,date:"2026-07-10",principal:1116.66,interest:593.53,insurance:38.66,total:1748.85,balance:147574.54},
+  {nr:3,date:"2026-08-10",principal:1121.12,interest:589.07,insurance:38.37,total:1748.56,balance:146453.42},
+  {nr:4,date:"2026-09-10",principal:1125.60,interest:584.59,insurance:38.08,total:1748.27,balance:145327.82},
+  {nr:5,date:"2026-10-10",principal:1130.09,interest:580.10,insurance:37.79,total:1747.98,balance:144197.73},
+  {nr:6,date:"2026-11-10",principal:1134.60,interest:575.59,insurance:37.49,total:1747.68,balance:143063.13},
+  {nr:7,date:"2026-12-10",principal:1139.13,interest:571.06,insurance:37.20,total:1747.39,balance:141924.00},
+  {nr:8,date:"2027-01-10",principal:1143.68,interest:566.51,insurance:36.90,total:1747.09,balance:140780.32},
+  {nr:9,date:"2027-02-10",principal:1148.24,interest:561.95,insurance:36.60,total:1746.79,balance:139632.08},
+  {nr:10,date:"2027-03-10",principal:1152.83,interest:557.36,insurance:36.30,total:1746.49,balance:138479.25},
+  {nr:11,date:"2027-04-10",principal:1157.43,interest:552.76,insurance:36.00,total:1746.19,balance:137321.82},
+  {nr:12,date:"2027-05-10",principal:1162.05,interest:548.14,insurance:35.70,total:1745.89,balance:136159.77},
+  {nr:13,date:"2027-06-10",principal:1166.69,interest:543.50,insurance:35.40,total:1745.59,balance:134993.08},
+  {nr:14,date:"2027-07-10",principal:1171.34,interest:538.85,insurance:35.10,total:1745.29,balance:133821.74},
+  {nr:15,date:"2027-08-10",principal:1176.02,interest:534.17,insurance:34.79,total:1744.98,balance:132645.72},
+  {nr:16,date:"2027-09-10",principal:1180.71,interest:529.48,insurance:34.49,total:1744.68,balance:131465.01},
+  {nr:17,date:"2027-10-10",principal:1185.43,interest:524.76,insurance:34.18,total:1744.37,balance:130279.58},
+  {nr:18,date:"2027-11-10",principal:1190.16,interest:520.03,insurance:33.87,total:1744.06,balance:129089.42},
+  {nr:19,date:"2027-12-10",principal:1194.91,interest:515.28,insurance:33.56,total:1743.75,balance:127894.51},
+  {nr:20,date:"2028-01-10",principal:1199.68,interest:510.51,insurance:33.25,total:1743.44,balance:126694.83},
+  {nr:21,date:"2028-02-10",principal:1204.47,interest:505.72,insurance:32.94,total:1743.13,balance:125490.36},
+  {nr:22,date:"2028-03-10",principal:1209.27,interest:500.92,insurance:32.63,total:1742.82,balance:124281.09},
+  {nr:23,date:"2028-04-10",principal:1054.47,interest:655.72,insurance:32.31,total:1742.50,balance:123226.62},
+  {nr:24,date:"2028-05-10",principal:1095.50,interest:788.65,insurance:32.04,total:1916.19,balance:122131.12},
+  {nr:25,date:"2028-06-10",principal:1102.51,interest:781.64,insurance:31.75,total:1915.90,balance:121028.61},
+  {nr:26,date:"2028-07-10",principal:1109.57,interest:774.58,insurance:31.47,total:1915.62,balance:119919.04},
+  {nr:27,date:"2028-08-10",principal:1116.67,interest:767.48,insurance:31.18,total:1915.33,balance:118802.37},
+  {nr:28,date:"2028-09-10",principal:1123.81,interest:760.34,insurance:30.89,total:1915.04,balance:117678.56},
+  {nr:29,date:"2028-10-10",principal:1131.01,interest:753.14,insurance:30.60,total:1914.75,balance:116547.55},
+  {nr:30,date:"2028-11-10",principal:1138.25,interest:745.90,insurance:30.30,total:1914.45,balance:115409.30}
+];
+
+// ALL historical + planned early payments
+var SEED_PAY=[
+  {id:101,date:"2026-01-11",amount:5804.72,note:"Rambursare anticipată Ian 2026",monthsCut:5},
+  {id:102,date:"2026-02-11",amount:6005.62,note:"Rambursare anticipată Feb 2026",monthsCut:6},
+  {id:103,date:"2026-03-11",amount:6102.55,note:"Rambursare anticipată Mar 2026",monthsCut:6},
+  {id:104,date:"2026-04-11",amount:11617.50,note:"Rambursare anticipată Apr 2026",monthsCut:11},
+  {id:105,date:"2026-05-11",amount:6580.19,note:"Rambursare anticipată Mai 2026",monthsCut:6},
+  {id:1,date:"2026-06-11",amount:6800,note:"Rambursare anticipată Iun 2026",monthsCut:0},
+  {id:2,date:"2027-04-11",amount:15000,note:"Bonus Apr 2027",monthsCut:0}
+];
+
+var MILESTONES=[120000,100000,75000,50000,25000,10000,0];
+var SALARY=12200; // monthly net salary reference
+
+// ── CATEGORIES ────────────────────────────────────────────────────────────────
+var CATS=[
+  {id:"mancare",     label:"Mâncare & Restaurant",   color:"#FF6B6B",icon:"🍔",bucket:"nevoi"},
+  {id:"transport",   label:"Transport",               color:"#4ECDC4",icon:"🚗",bucket:"nevoi"},
+  {id:"utilitati",   label:"Utilități",               color:"#45B7D1",icon:"💡",bucket:"nevoi"},
+  {id:"sanatate",    label:"Sănătate",                color:"#96CEB4",icon:"💊",bucket:"nevoi"},
+  {id:"ares_milo",   label:"Ares & Milo",             color:"#a3e635",icon:"🐾",bucket:"nevoi"},
+  {id:"credit",      label:"Rate & Credit",           color:"#ef4444",icon:"🏦",bucket:"nevoi"},
+  {id:"beauty",      label:"Beauty & Personal Care",  color:"#f472b6",icon:"💄",bucket:"dorinte"},
+  {id:"haine",       label:"Haine & Încălțăminte",    color:"#fb923c",icon:"👗",bucket:"dorinte"},
+  {id:"iesiri",      label:"Ieșiri",                  color:"#c084fc",icon:"🎉",bucket:"dorinte"},
+  {id:"cumparaturi", label:"Cumpărături",             color:"#FFEAA7",icon:"🛍️",bucket:"dorinte"},
+  {id:"vacante",     label:"Vacanțe",                 color:"#818cf8",icon:"✈️",bucket:"dorinte"},
+  {id:"sport",       label:"Sport & Fitness",         color:"#FFA07A",icon:"💪",bucket:"dorinte"},
+  {id:"abonamente",  label:"Abonamente & Streaming",  color:"#DDA0DD",icon:"📺",bucket:"dorinte"},
+  {id:"taxe",        label:"Taxe & Impozite",         color:"#94a3b8",icon:"🏛️",bucket:"nevoi"},
+  {id:"economii",    label:"Economii",                color:"#10b981",icon:"🏦",bucket:"economii"},
+  {id:"rambursare",  label:"Rambursare Anticipată",   color:"#f59e0b",icon:"💰",bucket:"investitii"},
+  {id:"datorie_in",  label:"Intrare Datorie",         color:"#6ee7b7",icon:"🤝",bucket:"altele"},
+  {id:"alte_intrari",label:"Alte Intrări",            color:"#60a5fa",icon:"↙️",bucket:"altele"},
+  {id:"altele",      label:"Altele",                  color:"#6b7280",icon:"📦",bucket:"dorinte"}
+];
+
+function catById(id){for(var i=0;i<CATS.length;i++){if(CATS[i].id===id)return CATS[i];}return CATS[CATS.length-1];}
+
+function autocat(text){
+  var d=text.toLowerCase();
+  if(d.indexOf("revolut")!==-1)return"vacante";
+  if(d.indexOf("money reserve")!==-1)return"economii";
+  if(d.indexOf("salariu")!==-1||d.indexOf("db global technology")!==-1)return"salariu";
+  if(d.indexOf("rambursare credit curent")!==-1||d.indexOf("rambursare anticipat")!==-1)return"rambursare";
+  if(d.indexOf("rambursare dobanda")!==-1||d.indexOf("rata dobanda")!==-1)return"credit";
+  if(d.indexOf("rata credit")!==-1||d.indexOf("incasare rata credit")!==-1)return"credit";
+  if(d.indexOf("asigurare")!==-1)return"credit";
+  if(d.indexOf("scarlat adrian")!==-1||d.indexOf("scarlat milica")!==-1)return"alte_intrari";
+  if(d.indexOf("kaufland")!==-1||d.indexOf("lidl")!==-1||d.indexOf("mega image")!==-1||d.indexOf("megaimage")!==-1||d.indexOf("auchan")!==-1||d.indexOf("penny")!==-1||d.indexOf("profi")!==-1||d.indexOf("carrefour")!==-1||d.indexOf("mcdonald")!==-1||d.indexOf("kfc")!==-1||d.indexOf("pizza")!==-1||d.indexOf("restaurant")!==-1||d.indexOf("bistro")!==-1||d.indexOf("coffeevore")!==-1||d.indexOf("cafe")!==-1||d.indexOf("rulota")!==-1||d.indexOf("ofresh")!==-1||d.indexOf("mercon")!==-1||d.indexOf("preda drink")!==-1)return"mancare";
+  if(d.indexOf("petrom")!==-1||d.indexOf("mol ")!==-1||d.indexOf("rompetrol")!==-1||d.indexOf("omv")!==-1||d.indexOf("uber")!==-1||d.indexOf("bolt")!==-1||d.indexOf("parcare")!==-1||d.indexOf("metrorex")!==-1||d.indexOf("stb")!==-1)return"transport";
+  if(d.indexOf("enel")!==-1||d.indexOf("engie")!==-1||d.indexOf("digi")!==-1||d.indexOf("orange")!==-1||d.indexOf("vodafone")!==-1||d.indexOf("telekom")!==-1||d.indexOf("apa nova")!==-1||d.indexOf("yoxo")!==-1||d.indexOf("hidroelectrica")!==-1)return"utilitati";
+  if(d.indexOf("farmacie")!==-1||d.indexOf("catena")!==-1||d.indexOf("sensiblu")!==-1||d.indexOf("helpnet")!==-1||d.indexOf("clinica")!==-1||d.indexOf("laborator")!==-1||d.indexOf("synevo")!==-1||d.indexOf("medicover")!==-1)return"sanatate";
+  if(d.indexOf("megapet")!==-1||d.indexOf("fressnapf")!==-1||d.indexOf("heyblu")!==-1||d.indexOf("zooplus")!==-1||d.indexOf("animax")!==-1)return"ares_milo";
+  if(d.indexOf("netflix")!==-1||d.indexOf("spotify")!==-1||d.indexOf("hbo")!==-1||d.indexOf("apple")!==-1||d.indexOf("youtube")!==-1||d.indexOf("google")!==-1)return"abonamente";
+  if(d.indexOf("emag")!==-1||d.indexOf("altex")!==-1||d.indexOf("flanco")!==-1||d.indexOf("dedeman")!==-1||d.indexOf("ikea")!==-1||d.indexOf("leroy")!==-1||d.indexOf("e-bloc")!==-1)return"cumparaturi";
+  if(d.indexOf("shein")!==-1||d.indexOf("sin-say")!==-1||d.indexOf("sinsay")!==-1||d.indexOf("glowrious")!==-1||d.indexOf("h&m")!==-1||d.indexOf("zara")!==-1||d.indexOf("reserved")!==-1)return"haine";
+  if(d.indexOf("neurosport")!==-1||d.indexOf("fitness")!==-1||d.indexOf("gym")!==-1||d.indexOf("sala")!==-1)return"sport";
+  return"altele";
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+var S={
+  sched:null,pay:null,bal:null,sdate:null,
+  txn:[],savBal:null,income:12200,
+  calcM:3,tab:"home",credTab:"chart",
+  showAdd:false,uploading:false,upMsg:"",
+  debtors:[],
+  donutInst:null
+};
+
+function lg(k,fb){try{var v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
+function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+function load(){
+  S.sched  =lg("bs",SEED_SCHED);
+  S.pay    =lg("bp",SEED_PAY);
+  S.bal    =lg("bb",SEED_BALANCE);
+  S.sdate  =lg("bd",SEED_DATE);
+  S.txn    =lg("bt",[]);
+  S.savBal =lg("bsav",null);
+  S.income =lg("binc",12200);
+  S.calcM  =lg("bcm",3);
+  S.debtors=lg("bdet",[{id:1,name:"Scarlat Adrian-Daniel",startAmount:31400,currentAmount:31400,note:"Datorie inițială la 30.05.2026"}]);
+  if(!S.txn||!S.txn.length) S.txn=seedTxn();
+}
+
+function svc(){ls("bs",S.sched);ls("bp",S.pay);ls("bb",S.bal);ls("bd",S.sdate);}
+function svt(){ls("bt",S.txn);}
+function svs(){ls("bsav",S.savBal);}
+function svi(){ls("binc",S.income);ls("bcm",S.calcM);}
+function svd(){ls("bdet",S.debtors);}
+
+// ── SEED TRANSACTIONS (04.05–30.05.2026 from uploaded extract) ────────────────
+function seedTxn(){
+  return [
+    {id:1,  date:"04-05-2026",desc:"SALARIU APRILIE 2026 - DB Global Technology SRL",amt:12264,credit:true, cat:"salariu"},
+    {id:2,  date:"06-05-2026",desc:"Cadou - Scarlat Milica",                          amt:50,   credit:true, cat:"alte_intrari"},
+    {id:3,  date:"04-05-2026",desc:"Hidroelectrica SA",                               amt:150,  credit:false,cat:"utilitati"},
+    {id:4,  date:"04-05-2026",desc:"E-BLOC.RO Cluj Napoca",                           amt:167.46,credit:false,cat:"cumparaturi"},
+    {id:5,  date:"04-05-2026",desc:"Revolut - Dublin (vacanță)",                      amt:1998.54,credit:false,cat:"vacante"},
+    {id:6,  date:"02-05-2026",desc:"SinSay - Bucuresti",                              amt:202.51,credit:false,cat:"haine"},
+    {id:7,  date:"04-05-2026",desc:"ENGIE - Bucuresti",                               amt:250,  credit:false,cat:"utilitati"},
+    {id:8,  date:"04-05-2026",desc:"OFRESH DB Global - Bucuresti",                    amt:5,    credit:false,cat:"mancare"},
+    {id:9,  date:"04-05-2026",desc:"MERCON - Cepari",                                 amt:306.26,credit:false,cat:"mancare"},
+    {id:10, date:"04-05-2026",desc:"M022 RULOTA - Bucuresti",                         amt:20,   credit:false,cat:"mancare"},
+    {id:11, date:"05-05-2026",desc:"Google YouTube Premium",                          amt:28.96,credit:false,cat:"abonamente"},
+    {id:12, date:"11-05-2026",desc:"Intrare din Economii",                            amt:650,  credit:true, cat:"alte_intrari"},
+    {id:13, date:"05-05-2026",desc:"COFFEEVORE 26 - Bucuresti",                       amt:16,   credit:false,cat:"mancare"},
+    {id:14, date:"05-05-2026",desc:"NETFLIX.COM Amsterdam",                           amt:31.26,credit:false,cat:"abonamente"},
+    {id:15, date:"05-05-2026",desc:"Comision conversie Netflix",                      amt:0.78, credit:false,cat:"altele"},
+    {id:16, date:"06-05-2026",desc:"DIGI Romania SA - Bucuresti",                     amt:79.30,credit:false,cat:"utilitati"},
+    {id:17, date:"06-05-2026",desc:"MEGAIMAGE 1055 - Bucuresti",                      amt:110.22,credit:false,cat:"mancare"},
+    {id:18, date:"06-05-2026",desc:"CARREFOUR MK - Bucuresti",                        amt:102.64,credit:false,cat:"mancare"},
+    {id:19, date:"06-05-2026",desc:"SinSay - Bucuresti",                              amt:45.99,credit:false,cat:"haine"},
+    {id:20, date:"06-05-2026",desc:"GLOWRIOUS.RO",                                    amt:306.22,credit:false,cat:"haine"},
+    {id:21, date:"07-05-2026",desc:"OFRESH DB Global - Bucuresti",                    amt:5,    credit:false,cat:"mancare"},
+    {id:22, date:"07-05-2026",desc:"OFRESH DB Global - Bucuresti",                    amt:3.50, credit:false,cat:"mancare"},
+    {id:23, date:"08-05-2026",desc:"MPY*megapet - Tulcea",                            amt:409.99,credit:false,cat:"ares_milo"},
+    {id:24, date:"08-05-2026",desc:"APPLE.COM/BILL - Cork",                           amt:4.97, credit:false,cat:"abonamente"},
+    {id:25, date:"08-05-2026",desc:"SinSay - Bucuresti",                              amt:185.95,credit:false,cat:"haine"},
+    {id:26, date:"10-05-2026",desc:"Asigurare viata credit",                          amt:40.94,credit:false,cat:"credit"},
+    {id:27, date:"10-05-2026",desc:"Rata dobanda credit",                             amt:607.60,credit:false,cat:"credit"},
+    {id:28, date:"10-05-2026",desc:"Rata credit",                                     amt:1081.63,credit:false,cat:"credit"},
+    {id:29, date:"11-05-2026",desc:"Rambursare dobanda curenta",                      amt:20.81,credit:false,cat:"credit"},
+    {id:30, date:"11-05-2026",desc:"Rambursare credit curent (ANTICIPAT)",            amt:6580.19,credit:false,cat:"rambursare"},
+    {id:31, date:"10-05-2026",desc:"PayU*Heyblu.ro - Voluntari",                      amt:99.83,credit:false,cat:"ares_milo"},
+    {id:32, date:"12-05-2026",desc:"Orange YOXO - Bucuresti",                         amt:26.05,credit:false,cat:"utilitati"},
+    {id:33, date:"16-05-2026",desc:"PREDA DRINK COFFEE - Bucuresti",                  amt:29.70,credit:false,cat:"mancare"},
+    {id:34, date:"19-05-2026",desc:"OFRESH DB Global - Bucuresti",                    amt:5.50, credit:false,cat:"mancare"},
+    {id:35, date:"19-05-2026",desc:"M022 RULOTA - Bucuresti",                         amt:20,   credit:false,cat:"mancare"},
+    {id:36, date:"23-05-2026",desc:"Intrare din Economii",                            amt:200,  credit:true, cat:"alte_intrari"},
+    {id:37, date:"23-05-2026",desc:"LEROY MERLIN PALLADY - Bucuresti",               amt:210.48,credit:false,cat:"cumparaturi"},
+    {id:38, date:"24-05-2026",desc:"SHEIN - Dublin",                                  amt:141.67,credit:false,cat:"haine"},
+    {id:39, date:"25-05-2026",desc:"Intrare din Economii",                            amt:200,  credit:true, cat:"alte_intrari"},
+    {id:40, date:"25-05-2026",desc:"Revolut - Dublin",                                amt:60.05,credit:false,cat:"vacante"},
+    {id:41, date:"23-05-2026",desc:"Fressnapf - Bukarest",                            amt:85.71,credit:false,cat:"ares_milo"},
+    {id:42, date:"26-05-2026",desc:"Intrare din Economii",                            amt:300,  credit:true, cat:"alte_intrari"},
+    {id:43, date:"26-05-2026",desc:"Transfer catre Economii - Money reserve",         amt:1900, credit:false,cat:"economii"},
+    {id:44, date:"28-05-2026",desc:"SinSay - Bucuresti",                              amt:208.41,credit:false,cat:"haine"},
+    {id:45, date:"29-05-2026",desc:"Intrare - Scarlat Adrian-Daniel (datorie)",       amt:1700, credit:true, cat:"datorie_in"},
+    {id:46, date:"29-05-2026",desc:"Transfer catre Economii - Money reserve",         amt:1900, credit:false,cat:"economii"},
+    {id:47, date:"29-05-2026",desc:"Retur SinSay - Bucuresti",                        amt:109.45,credit:true,cat:"alte_intrari"}
+  ];
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function fl(n){return new Intl.NumberFormat("ro-RO",{maximumFractionDigits:0}).format(Math.abs(n))+" lei";}
+function fk(n){return n>=1000?Math.round(n/1000)+"k":String(Math.round(n));}
+function ml(iso){if(!iso)return"";var p=iso.split("-");var nm=["Ian","Feb","Mar","Apr","Mai","Iun","Iul","Aug","Sep","Oct","Nov","Dec"];return nm[parseInt(p[1],10)-1]+" "+p[0];}
+
+function timeline(){
+  var em={};
+  S.pay.forEach(function(p){var k=p.date.slice(0,7);em[k]=(em[k]||0)+Number(p.amount);});
+  var lines=[],bal=S.bal,sc=S.sched;
+  for(var i=0;i<sc.length;i++){
+    bal=Math.max(0,bal-sc[i].principal);
+    var k=sc[i].date.slice(0,7),sur=em[k]||MONTHLY_SURPLUS;
+    bal=Math.max(0,bal-sur);
+    lines.push({date:k,balance:Math.round(bal),hasExtra:sur>0});
+    if(bal<=0)return lines;
+  }
+  if(!sc.length)return lines;
+  var last=sc[sc.length-1],lastD=new Date(last.date);
+  for(var m=1;m<=120;m++){
+    var d=new Date(lastD);d.setMonth(d.getMonth()+m);
+    var rate=d<new Date("2028-03-24")?0.0479/12:0.0768/12;
+    var interest=bal*rate,principal=Math.min(last.total-interest,bal);
+    bal=Math.max(0,bal-principal);
+    var ymk=d.toISOString().slice(0,7),surp=em[ymk]||MONTHLY_SURPLUS;
+    bal=Math.max(0,bal-surp);
+    lines.push({date:ymk,balance:Math.round(bal),hasExtra:surp>0});
+    if(bal<=0)return lines;
+  }
+  return lines;
+}
+
+function calcSavings(){
+  var totalA=0,totalMC=0;
+  S.pay.forEach(function(p){totalA+=Number(p.amount);totalMC+=(p.monthsCut||0);});
+  var tl=timeline();
+  var pe=tl.length?tl[tl.length-1].date:ORIG_END;
+  var savedP=S.pay;S.pay=[];
+  var tl2=timeline();
+  var ne=tl2.length?tl2[tl2.length-1].date:ORIG_END;
+  S.pay=savedP;
+  var wp=pe.split("-").map(Number),wop=ne.split("-").map(Number);
+  var ms=Math.max(0,(wop[0]-wp[0])*12+(wop[1]-wp[1]));
+  var ai=0;
+  if(S.sched.length){var ti=S.sched.reduce(function(s,r){return s+r.interest;},0);ai=ti/S.sched.length;}
+  else ai=S.bal*0.0479/12;
+  return{totalA:Math.round(totalA),totalMC:totalMC,ms:ms,is:Math.round(ms*ai),ys:(ms/12).toFixed(1),pe:pe,ne:ne};
+}
+
+function calcMsum(n){
+  var sc=S.sched;if(sc.length<2)return 0;
+  var sum=0;for(var i=1;i<=n&&i<sc.length;i++)sum+=sc[i].principal;
+  return Math.round(sum*100)/100;
+}
+
+// Savings auto-calc from transactions
+function calcSavingsFromTxn(){
+  var into=0,outof=0;
+  S.txn.forEach(function(t){
+    if(!t.credit&&t.cat==="economii") outof+=t.amt; // money moved TO savings
+    // money FROM savings are tagged "alte_intrari" with desc containing "Economii"
+    if(t.credit&&(t.desc||"").toLowerCase().indexOf("economii")!==-1) into-=t.amt; // reduces savings
+  });
+  // net movement: positive = added to savings, negative = took from savings
+  return {into:outof, outof:outof===0?0:0, net:outof}; // simplified: track separately
+}
+
+function savingsDelta(){
+  var added=0,removed=0;
+  S.txn.forEach(function(t){
+    if(!t.credit&&t.cat==="economii") added+=t.amt;
+    if(t.credit&&(t.desc||"").toLowerCase().indexOf("economii")!==-1) removed+=t.amt;
+  });
+  return{added:added,removed:removed,net:added-removed};
+}
+
+// SVG credit chart
+function creditSVG(tl){
+  var W=500,H=155,PL=38,maxB=S.bal;
+  if(!tl.length||maxB<=0)return"<p style='color:#374151;text-align:center;padding:20px'>Nu există date</p>";
+  var pts=tl.map(function(p,i){return{x:PL+(i/Math.max(tl.length-1,1))*(W-PL),y:H-(Math.max(0,p.balance)/maxB)*H,date:p.date,balance:p.balance,hasExtra:p.hasExtra};});
+  var poly=pts.map(function(p){return p.x+","+p.y;}).join(" ");
+  var area=pts.length>1?pts[0].x+","+H+" "+poly+" "+pts[pts.length-1].x+","+H:"";
+  var s='<svg viewBox="0 0 '+W+' '+(H+28)+'" style="width:100%;min-width:260px">';
+  s+='<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f5c842" stop-opacity="0.2"/><stop offset="100%" stop-color="#f5c842" stop-opacity="0"/></linearGradient></defs>';
+  for(var fi=0;fi<=4;fi++){var f=fi*0.25,gy=H-f*H,gv=Math.round(f*maxB/1000);s+='<line x1="'+PL+'" y1="'+gy+'" x2="'+W+'" y2="'+gy+'" stroke="#1a1f2e" stroke-width="1"/><text x="'+(PL-3)+'" y="'+(gy+4)+'" text-anchor="end" fill="#2d3748" font-size="9">'+gv+'k</text>';}
+  MILESTONES.forEach(function(m){if(m<=0||m>=maxB)return;var my=H-(m/maxB)*H;s+='<line x1="'+PL+'" y1="'+my+'" x2="'+W+'" y2="'+my+'" stroke="#f5c842" stroke-width="0.5" stroke-dasharray="4,4" opacity="0.3"/><text x="'+(W-2)+'" y="'+(my-2)+'" text-anchor="end" fill="#f5c842" font-size="8" opacity="0.4">'+fk(m)+'</text>';});
+  if(area)s+='<polygon points="'+area+'" fill="url(#ag)"/>';
+  if(pts.length>1)s+='<polyline points="'+poly+'" fill="none" stroke="#f5c842" stroke-width="2"/>';
+  pts.forEach(function(p){if(p.hasExtra)s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="#6ee7b7" opacity="0.9"/>';});
+  pts.forEach(function(p,i){if(i%6===0)s+='<text x="'+p.x+'" y="'+(H+16)+'" text-anchor="middle" fill="#2d3748" font-size="8">'+p.date+'</text>';});
+  s+='</svg>';return s;
+}
+
+// ── RENDER HOME ────────────────────────────────────────────────────────────────
+function renderHome(){
+  var tl=timeline();
+  var pe=tl.length?tl[tl.length-1].date:ORIG_END;
+  var op=ORIG_END.split("-").map(Number),pp=pe.split("-").map(Number);
+  var msTot=Math.max(0,(op[0]-pp[0])*12+(op[1]-pp[1]));
+  var paid=INITIAL_LOAN-S.bal,pct=(paid/INITIAL_LOAN)*100;
+  var nextMs=0;for(var i=0;i<MILESTONES.length;i++){if(MILESTONES[i]<S.bal){nextMs=MILESTONES[i];break;}}
+  var prevMs=INITIAL_LOAN;for(var j=MILESTONES.length-1;j>=0;j--){if(MILESTONES[j]>=S.bal){prevMs=MILESTONES[j];break;}}
+  var msPct=prevMs===nextMs?100:((prevMs-S.bal)/(prevMs-nextMs))*100;
+  var sav=calcSavings();
+  var today=new Date().toISOString().slice(0,10);
+  var upcoming=null;
+  var sp=S.pay.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  for(var k=0;k<sp.length;k++){if(sp[k].date>=today){upcoming=sp[k];break;}}
+
+  var h="";
+  h+='<div style="text-align:center;margin-bottom:20px">';
+  h+='<div style="font-size:9px;letter-spacing:0.35em;color:#374151;margin-bottom:4px">BCR · 20253170925 · '+S.sdate+'</div>';
+  h+='<h1 style="font-size:22px;font-weight:400;color:#f1f5f9">Drumul spre libertate</h1></div>';
+
+  // Balance
+  h+='<div class="card" style="text-align:center;position:relative;overflow:hidden">';
+  h+='<div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% -10%,rgba(245,200,66,0.08) 0%,transparent 65%);pointer-events:none"></div>';
+  h+='<span class="lbl">Sold curent credit</span>';
+  h+='<div style="font-size:40px;font-weight:700;letter-spacing:-0.04em;line-height:1.1">'+fl(S.bal)+'</div>';
+  h+='<div style="font-size:11px;color:#f5c842;margin-top:4px">din '+fl(INITIAL_LOAN)+' împrumutați</div>';
+  h+='<div class="pbar"><div class="pfill" style="width:'+pct+'%"></div></div>';
+  h+='<div style="display:flex;justify-content:space-between;font-size:11px;color:#374151"><span>Rambursat: '+fl(paid)+'</span><span>'+pct.toFixed(1)+'%</span></div></div>';
+
+  // Stats grid
+  h+='<div class="grid3">';
+  h+='<div class="card" style="margin-bottom:0;text-align:center"><span class="lbl">Finalizare</span><div style="font-size:15px;color:#6ee7b7;font-weight:700">'+ml(pe+"-01")+'</div><div style="font-size:9px;color:#374151;margin-top:2px">vs Mai 2035</div></div>';
+  h+='<div class="card" style="margin-bottom:0;text-align:center"><span class="lbl">Luni ec.</span><div style="font-size:15px;color:#f5c842;font-weight:700">~'+msTot+'</div><div style="font-size:9px;color:#374151;margin-top:2px">luni economisite</div></div>';
+  // TOTAL MONTHS CUT card
+  h+='<div class="card" style="margin-bottom:0;text-align:center;border:1px solid rgba(110,231,183,0.2);background:rgba(110,231,183,0.04)">';
+  h+='<span class="lbl">Tăiat</span>';
+  var totalMC=sav.totalMC;
+  var yCut=Math.floor(totalMC/12),mCut=totalMC%12;
+  h+='<div style="font-size:15px;color:#6ee7b7;font-weight:700">'+totalMC+' luni</div>';
+  h+='<div style="font-size:9px;color:#374151;margin-top:2px">'+yCut+' ani '+mCut+' luni</div></div>';
+  h+='</div>';
+
+  // Milestone
+  h+='<div class="card"><span class="lbl">Următorul milestone</span>';
+  h+='<div style="display:flex;justify-content:space-between;font-size:11px;color:#4b5563;margin-bottom:8px"><span>'+fk(prevMs)+' lei</span><span style="color:#f5c842;font-weight:700">🎯 '+(nextMs===0?"LIBER! 🎉":fk(nextMs)+" lei")+'</span><span style="color:#6ee7b7">'+fk(nextMs)+' lei</span></div>';
+  h+='<div style="background:#0f1117;border-radius:100px;height:10px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,Math.max(0,msPct))+'%;background:linear-gradient(90deg,#f5c842,#6ee7b7);border-radius:100px;transition:width 0.6s"></div></div>';
+  h+='<div style="font-size:11px;color:#374151;margin-top:6px;text-align:center">mai ai '+fl(S.bal-nextMs)+' până la milestone</div></div>';
+
+  // Savings section
+  h+='<div class="card" style="border:1px solid rgba(110,231,183,0.25);background:rgba(110,231,183,0.04)">';
+  h+='<span class="lbl">💰 Ce ai economisit prin rambursări anticipate (Ian 2026 → azi)</span>';
+  h+='<div class="grid2" style="margin-bottom:12px">';
+  h+='<div style="background:rgba(110,231,183,0.08);border:1px solid rgba(110,231,183,0.2);border-radius:12px;padding:12px;text-align:center">';
+  h+='<div style="font-size:10px;color:#4b5563;margin-bottom:4px;letter-spacing:0.1em;text-transform:uppercase">Dobândă economisită</div>';
+  h+='<div style="font-size:22px;font-weight:700;color:#6ee7b7">'+fl(sav.is)+'</div>';
+  h+='<div style="font-size:10px;color:#374151;margin-top:3px">față de fără rambursări</div></div>';
+  h+='<div style="background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.2);border-radius:12px;padding:12px;text-align:center">';
+  h+='<div style="font-size:10px;color:#4b5563;margin-bottom:4px;letter-spacing:0.1em;text-transform:uppercase">Timp economisit</div>';
+  h+='<div style="font-size:22px;font-weight:700;color:#f5c842">'+sav.ys+' ani</div>';
+  h+='<div style="font-size:10px;color:#374151;margin-top:3px">'+sav.ms+' luni mai devreme</div></div></div>';
+
+  h+='<div style="font-size:10px;color:#4b5563;margin-bottom:6px;letter-spacing:0.15em;text-transform:uppercase">Rambursări efectuate / planificate</div>';
+  var totA=0;
+  S.pay.forEach(function(p){
+    totA+=Number(p.amount);
+    var past=p.date<=today;
+    h+='<div class="pr"><div><div style="font-size:12px;color:#e2e8f0">'+p.note+'</div><div style="font-size:10px;color:#374151">'+p.date+(p.monthsCut?' · ✂️ '+p.monthsCut+' luni':'')+'</div></div>';
+    h+='<div style="font-size:13px;color:'+(past?"#6ee7b7":"#f5c842")+';font-weight:700">−'+fl(p.amount)+'</div></div>';
+  });
+  h+='<div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px"><div style="font-size:12px;color:#9ca3af;font-weight:700">Total rambursat anticipat</div><div style="font-size:16px;color:#6ee7b7;font-weight:700">'+fl(totA)+'</div></div>';
+  h+='<div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:10px 12px;margin-top:8px">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><span style="font-size:11px;color:#4b5563">Fără rambursări anticipate:</span><span style="font-size:13px;color:#f87171;font-weight:700">'+ml(sav.ne+"-01")+'</span></div>';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:#4b5563">Cu rambursări anticipate:</span><span style="font-size:13px;color:#6ee7b7;font-weight:700">'+ml(sav.pe+"-01")+'</span></div></div></div>';
+
+  // Quick balance
+  h+='<div class="card"><span class="lbl">📱 Actualizare rapidă sold credit</span>';
+  h+='<div style="display:flex;gap:8px"><input type="number" inputmode="decimal" id="qb" placeholder="'+Math.round(S.bal)+'" style="flex:1"><button class="bg" onclick="saveQB()" id="saveBal">Salvează</button></div></div>';
+
+  if(upcoming){
+    h+='<div class="card" style="border:1px solid rgba(110,231,183,0.2);background:rgba(110,231,183,0.04)">';
+    h+='<span class="lbl">Următoarea rambursare anticipată</span>';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:16px;color:#6ee7b7;font-weight:700">'+fl(upcoming.amount)+'</div><div style="font-size:11px;color:#4b5563;margin-top:2px">'+upcoming.date+' · '+upcoming.note+'</div></div><div style="font-size:28px">💰</div></div></div>';
+  }
+
+  document.getElementById("page-home").innerHTML=h;
+}
+
+// ── RENDER CREDIT ──────────────────────────────────────────────────────────────
+function renderCredit(){
+  var tl=timeline();
+  var ct=S.credTab;
+  var h="";
+  h+='<div style="text-align:center;margin-bottom:20px"><h1 style="font-size:22px;font-weight:400;color:#f1f5f9">Grafic credit</h1></div>';
+
+  // Calculator
+  h+='<div class="card" style="border:1px solid rgba(245,200,66,0.2);background:rgba(245,200,66,0.04)">';
+  h+='<span class="lbl">🧮 Calculator rambursare anticipată</span>';
+  h+='<div style="font-size:12px;color:#6b7280;margin-bottom:12px">Câte luni vrei să acoperi? (se calculează din rata a 2-a, doar coloana principal)</div>';
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+  h+='<input type="number" id="calcM" min="1" max="30" value="'+S.calcM+'" style="width:80px;flex:none" oninput="S.calcM=parseInt(this.value)||1;svi();updCalc()">';
+  h+='<span style="font-size:13px;color:#9ca3af">luni</span>';
+  h+='<div style="flex:1;text-align:right"><span id="calcRes" style="font-size:22px;font-weight:700;color:#f5c842">'+fl(calcMsum(S.calcM))+'</span></div></div>';
+  h+='<div id="calcDet" style="font-size:11px;color:#4b5563;line-height:1.6"></div></div>';
+
+  h+='<div class="strow">';
+  [["chart","📈 Grafic"],["list","📋 Proiecție"],["ms","🏆 Milestone"]].forEach(function(v){
+    h+='<button class="st '+(ct===v[0]?"active":"")+'" onclick="setCredTab(\''+v[0]+'\')">'+v[1]+'</button>';
+  });
+  h+='</div>';
+
+  if(ct==="chart"){
+    h+='<div class="card"><span class="lbl">Evoluția soldului spre zero</span><div style="overflow-x:auto">'+creditSVG(tl)+'</div>';
+    h+='<div style="display:flex;gap:14px;font-size:10px;color:#374151;margin-top:4px"><span style="color:#f5c842">── Sold</span><span style="color:#6ee7b7">● Rambursare anticipată</span></div></div>';
+  }
+  if(ct==="list"){
+    h+='<div class="card"><span class="lbl">Proiecție lunară</span><div style="max-height:420px;overflow-y:auto">';
+    var maxB=S.bal;
+    for(var i=0;i<tl.length;i++){
+      var p=tl[i],pct=Math.max(0,p.balance/maxB);
+      for(var mi=0;mi<MILESTONES.length;mi++){var m=MILESTONES[mi];if(m<=0||m>=maxB)continue;var prev=i>0?tl[i-1].balance:S.bal;if(m<prev&&m>=p.balance)h+='<div class="ms-crossed">🏆 sub '+fl(m)+'!</div>';}
+      var bc=pct>0.6?"#f5c842":pct>0.3?"#fb923c":"#6ee7b7";
+      h+='<div class="lrow"><div style="font-size:10px;color:#2d3748;width:48px;flex-shrink:0">'+p.date+'</div><div class="mbar"><div class="mfill" style="width:'+(pct*100)+'%;background:'+bc+'"></div></div><div style="font-size:11px;color:'+(p.hasExtra?"#6ee7b7":"#6b7280")+';width:82px;text-align:right;flex-shrink:0">'+fl(p.balance)+'</div></div>';
+    }
+    if(tl.length&&tl[tl.length-1].balance<=0)h+='<div style="text-align:center;padding:20px;font-size:16px;color:#6ee7b7">🎉 CREDIT ACHITAT!</div>';
+    h+='</div></div>';
+  }
+  if(ct==="ms"){
+    h+='<div class="card"><span class="lbl">Milestone-uri</span>';
+    MILESTONES.forEach(function(m){
+      if(m>=INITIAL_LOAN)return;
+      var reached=S.bal<=m||(m===0&&S.bal<=0);
+      var est="";for(var ti=0;ti<tl.length;ti++){if(tl[ti].balance<=m){est='<div style="font-size:10px;color:#374151;margin-top:1px">estimat: '+ml(tl[ti].date+"-01")+'</div>';break;}}
+      h+='<div class="ms-row"><div style="font-size:18px">'+(reached?"✅":"⏳")+'</div><div style="flex:1"><div style="font-size:13px;color:'+(reached?"#6ee7b7":"#9ca3af")+';font-weight:'+(reached?"700":"400")+'">'+(m===0?"🎉 CREDIT ACHITAT":fl(m))+'</div>'+est+'</div></div>';
+    });
+    h+='</div>';
+  }
+  document.getElementById("page-credit").innerHTML=h;
+  updCalcDetail();
+}
+
+function updCalc(){
+  var el=document.getElementById("calcRes");
+  if(el)el.textContent=fl(calcMsum(S.calcM));
+  updCalcDetail();
+}
+function updCalcDetail(){
+  var el=document.getElementById("calcDet");if(!el)return;
+  var sc=S.sched,rows=[];
+  for(var i=1;i<=S.calcM&&i<sc.length;i++)rows.push("Luna "+sc[i].nr+" ("+sc[i].date.slice(0,7)+"): "+fl(sc[i].principal));
+  el.innerHTML=rows.join("<br>");
+}
+
+// ── RENDER EXTRAS ──────────────────────────────────────────────────────────────
+function renderExtras(){
+  // compute all the numbers
+  var txAll=S.txn;
+  var salary=txAll.filter(function(t){return t.credit&&t.cat==="salariu";}).reduce(function(s,t){return s+t.amt;},0);
+  var alteIntrari=txAll.filter(function(t){return t.credit&&t.cat==="alte_intrari";}).reduce(function(s,t){return s+t.amt;},0);
+  var datoriIn=txAll.filter(function(t){return t.credit&&t.cat==="datorie_in";}).reduce(function(s,t){return s+t.amt;},0);
+  var savOut=txAll.filter(function(t){return !t.credit&&t.cat==="economii";}).reduce(function(s,t){return s+t.amt;},0);
+  var savIn=txAll.filter(function(t){return t.credit&&(t.desc||"").toLowerCase().indexOf("economii")!==-1;}).reduce(function(s,t){return s+t.amt;},0);
+  var rambOut=txAll.filter(function(t){return !t.credit&&t.cat==="rambursare";}).reduce(function(s,t){return s+t.amt;},0);
+
+  var buckets={nevoi:0,dorinte:0,economii:savOut,investitii:rambOut};
+  var catMap={};
+  txAll.filter(function(t){return !t.credit&&t.cat!=="economii"&&t.cat!=="rambursare";}).forEach(function(t){
+    catMap[t.cat]=(catMap[t.cat]||0)+t.amt;
+    var c=catById(t.cat);
+    if(c.bucket==="nevoi")buckets.nevoi+=t.amt;
+    else if(c.bucket==="dorinte")buckets.dorinte+=t.amt;
+  });
+
+  var totalExp=Object.values(catMap).reduce(function(a,b){return a+b;},0)+savOut+rambOut;
+  var overspent=totalExp>salary;
+
+  // survival needs
+  var survivalCats=["utilitati","credit","ares_milo","mancare"];
+  var survival=0;
+  survivalCats.forEach(function(c){survival+=(catMap[c]||0);});
+  // add credit rata if not already in
+  survival+=(catMap["credit"]||0);
+
+  // savings balance auto-calc
+  var netSav=savOut-savIn;
+  var displaySavBal=S.savBal!==null?(S.savBal+netSav):null;
+
+  // savings milestones
+  var savMs=[S.income,3*S.income,6*S.income,12*S.income];
+  var savMsLabels=["1 salariu","3 salarii","6 salarii","12 salarii"];
+
+  var h="";
+  h+='<div style="text-align:center;margin-bottom:14px"><h1 style="font-size:20px;font-weight:400;color:#f1f5f9">Analiza cheltuielilor</h1><div style="font-size:11px;color:#6b7280;margin-top:2px">Mai 2026 · 04.05 – 30.05</div></div>';
+
+  // Upload
+  h+='<div class="uzone"><input type="file" accept=".pdf" onchange="handlePDF(event)"/><div style="font-size:12px;color:#6b7280">📄 Actualizează cu un nou extras BCR (PDF)</div></div>';
+
+  // Income setting
+  h+='<div class="card"><div style="display:flex;align-items:center;gap:10px">';
+  h+='<span style="font-size:11px;color:#6b7280;flex:1">💰 Venit lunar net (salariu)</span>';
+  h+='<input type="number" id="incF" value="'+S.income+'" style="width:100px;flex:none;padding:6px 10px;font-size:13px" oninput="S.income=Number(this.value);svi();renderExtras()"/>';
+  h+='<span style="font-size:11px;color:#6b7280">RON</span></div></div>';
+
+  // OVERSPEND WARNING
+  if(overspent){
+    h+='<div class="warn">';
+    h+='⚠️ <strong>Atenție!</strong> Ai cheltuit '+fl(totalExp)+' față de '+fl(salary)+' salariu — cu <strong>'+fl(totalExp-salary)+' mai mult</strong>.<br/>';
+    // find top categories
+    var catArr2=Object.entries(catMap).map(function(e){return{id:e[0],v:e[1]};}).sort(function(a,b){return b.v-a.v;});
+    if(catArr2.length>0){
+      var c1=catById(catArr2[0].id);
+      h+='<br/>Cel mai mult cheltuiești pe <strong>'+c1.label+'</strong> ('+fl(catArr2[0].v)+'). ';
+      h+='Reducând cu 20% ai economisi '+fl(catArr2[0].v*0.2)+'/lună.<br/>';
+    }
+    h+='<br/>💡 <strong>Recomandare:</strong> Prioritizează cheltuielile esențiale și stabilește un buget fix pentru dorințe (recomandat max 30% din salariu = '+fl(salary*0.3)+').';
+    h+='</div>';
+  }
+
+  // Stats
+  h+='<div class="grid2" style="margin-bottom:14px">';
+  h+='<div class="card" style="margin-bottom:0;text-align:center;border-left:3px solid #6ee7b7"><span class="lbl">Salariu</span><div style="font-size:20px;font-weight:800;color:#6ee7b7">'+Math.round(salary).toLocaleString()+'</div><div style="font-size:10px;color:#374151">RON</div></div>';
+  h+='<div class="card" style="margin-bottom:0;text-align:center;border-left:3px solid #f87171"><span class="lbl">Total ieșiri</span><div style="font-size:20px;font-weight:800;color:#f87171">'+Math.round(totalExp).toLocaleString()+'</div><div style="font-size:10px;color:#374151">RON</div></div>';
+  h+='</div>';
+
+  // Alte intrari box
+  h+='<div class="card" style="border-left:3px solid #60a5fa">';
+  h+='<span class="lbl">↙️ Alte Intrări (nu se calculează la buget)</span>';
+  h+='<div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:#60a5fa;font-weight:700">+'+fl(alteIntrari+datoriIn)+'</span>';
+  h+='<span style="font-size:11px;color:#374151">transferuri din economii, cadouri, datorii primite</span></div></div>';
+
+  // Survival box
+  h+='<div class="card" style="border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.04)">';
+  h+='<span class="lbl">🆘 Buget minim de supraviețuire</span>';
+  h+='<div style="font-size:11px;color:#6b7280;margin-bottom:10px">Dacă rămâi fără job, ai nevoie de minimum:</div>';
+  var survRows=[{l:"Utilități",c:"utilitati"},{l:"Rate credit",c:"credit"},{l:"Ares & Milo",c:"ares_milo"},{l:"Mâncare",c:"mancare"}];
+  var survTotal=0;
+  survRows.forEach(function(r){
+    var v=catMap[r.c]||0;survTotal+=v;
+    h+='<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="font-size:12px;color:#9ca3af">'+r.l+'</span><span style="font-size:12px;color:#e2e8f0">'+fl(v)+'</span></div>';
+  });
+  h+='<div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px"><span style="font-size:13px;color:#fca5a5;font-weight:700">Total minim lunar</span><span style="font-size:18px;color:#fca5a5;font-weight:800">'+fl(survTotal)+'</span></div>';
+  h+='<div style="font-size:11px;color:#374151;margin-top:4px">Fondul de urgență ideal: '+fl(survTotal*6)+' (6 luni)</div></div>';
+
+  // ECONOMII section
+  var sd=savingsDelta();
+  var curSav=S.savBal!==null?S.savBal+sd.added-sd.removed:null;
+  var nextSavMs=null,nextSavMsLabel="";
+  for(var si=0;si<savMs.length;si++){if(curSav===null||curSav<savMs[si]){nextSavMs=savMs[si];nextSavMsLabel=savMsLabels[si];break;}}
+  var savPct=curSav!==null&&nextSavMs?Math.min(100,Math.max(0,(curSav/nextSavMs)*100)):0;
+  var prevSavMs=0;
+  for(var si2=0;si2<savMs.length;si2++){if(curSav!==null&&curSav>=savMs[si2])prevSavMs=savMs[si2];}
+
+  h+='<div class="card" style="border:1px solid rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)">';
+  h+='<span class="lbl">🏦 Economii</span>';
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
+  h+='<div style="font-size:13px;color:#6b7280">Sold curent:</div>';
+  h+='<div style="font-size:26px;font-weight:700;color:#10b981;flex:1;text-align:right">'+(curSav!==null?fl(curSav):"–")+'</div></div>';
+
+  // Savings progress bar
+  if(curSav!==null&&nextSavMs){
+    h+='<div style="margin-bottom:12px">';
+    h+='<div style="display:flex;justify-content:space-between;font-size:11px;color:#4b5563;margin-bottom:6px"><span>'+fl(prevSavMs)+'</span><span style="color:#10b981;font-weight:700">🎯 '+nextSavMsLabel+' ('+fl(nextSavMs)+')</span></div>';
+    h+='<div style="background:#0f1117;border-radius:100px;height:10px;overflow:hidden"><div style="height:100%;width:'+savPct+'%;background:linear-gradient(90deg,#10b981,#6ee7b7);border-radius:100px;transition:width 0.6s"></div></div>';
+    h+='<div style="font-size:11px;color:#374151;margin-top:4px;text-align:center">mai ai '+fl(nextSavMs-curSav)+' până la '+nextSavMsLabel+'</div></div>';
+  }
+
+  // In/out stats
+  h+='<div class="grid2" style="margin-bottom:12px">';
+  h+='<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:10px;text-align:center">';
+  h+='<div style="font-size:10px;color:#4b5563;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.1em">Pus în economii</div>';
+  h+='<div style="font-size:18px;font-weight:700;color:#10b981">+'+fl(sd.added)+'</div></div>';
+  h+='<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:10px;text-align:center">';
+  h+='<div style="font-size:10px;color:#4b5563;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.1em">Scos din economii</div>';
+  h+='<div style="font-size:18px;font-weight:700;color:#f87171">−'+fl(sd.removed)+'</div></div>';
+  h+='</div>';
+  if(sd.removed>0&&sd.added>0){
+    var ratio=Math.round(sd.removed/sd.added*100);
+    if(ratio>30){h+='<div style="font-size:11px;color:#fde68a;background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.2);border-radius:8px;padding:8px 10px;margin-bottom:10px">⚠️ Ai scos <strong>'+ratio+'%</strong> din ce ai pus în economii luna asta. Încearcă să nu atingi economiile odată puse!</div>';}
+  }
+
+  // Manual adjustment
+  h+='<div style="font-size:11px;color:#6b7280;margin-bottom:6px">Setează soldul de start sau ajustează manual:</div>';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
+  h+='<input type="number" id="savAmt" placeholder="ex: 4413.9 sau -300" style="flex:1;min-width:100px;padding:8px 10px;font-size:13px">';
+  h+='<button class="bs" onclick="setSav(false)">=Set</button>';
+  h+='<button class="bs" style="color:#6ee7b7" onclick="setSav(true)">+/−</button></div>';
+  h+='<div style="font-size:10px;color:#374151;margin-top:6px">La 30.05.2026 soldul economii era 4.413,90 lei (pre-setat)</div></div>';
+
+  // Donut chart
+  h+='<div class="card"><span class="lbl">📊 Distribuția bugetului lunar</span>';
+  h+='<div style="font-size:11px;color:#6b7280;margin-bottom:10px">Bazat pe etichetele din tab-ul Tranzacții</div>';
+  h+='<canvas id="donutC" height="190"></canvas>';
+  h+='<div id="donutL" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div></div>';
+
+  // Category breakdown
+  var catArr=Object.entries(catMap).map(function(e){return{id:e[0],v:e[1]};}).sort(function(a,b){return b.v-a.v;});
+  h+='<div class="card"><span class="lbl">📋 Pe categorii (cheltuieli directe)</span>';
+  catArr.forEach(function(c){
+    var def=catById(c.id);
+    var pct=totalExp>0?Math.round(c.v/totalExp*100):0;
+    h+='<div class="ci"><span style="font-size:14px;width:20px;text-align:center">'+def.icon+'</span><span class="cn">'+def.label+'</span><div class="cbw"><div class="cb" style="width:'+pct+'%;background:'+def.color+'"></div></div><span class="ca" style="color:'+def.color+'">'+Math.round(c.v)+'</span><span class="cp">'+pct+'%</span></div>';
+  });
+  h+='</div>';
+
+  document.getElementById("page-extras").innerHTML=h;
+
+  // Auto-set savings if not set
+  if(S.savBal===null){S.savBal=4413.90-sd.added+sd.removed;svs();}
+
+  // Donut
+  setTimeout(function(){
+    var ctx=document.getElementById("donutC");if(!ctx)return;
+    if(S.donutInst){S.donutInst.destroy();S.donutInst=null;}
+    var inc=S.income||1;
+    var data=[
+      {l:"Nevoi esențiale",v:Math.round(buckets.nevoi),c:"#45B7D1"},
+      {l:"Economii",v:Math.round(buckets.economii),c:"#10b981"},
+      {l:"Investiții/Rambursări",v:Math.round(buckets.investitii),c:"#f59e0b"},
+      {l:"Dorințe",v:Math.round(buckets.dorinte),c:"#c084fc"}
+    ].filter(function(d){return d.v>0;});
+    S.donutInst=new Chart(ctx,{type:"doughnut",data:{labels:data.map(function(d){return d.l+" ("+Math.round(d.v/inc*100)+"%)"}),datasets:[{data:data.map(function(d){return d.v;}),backgroundColor:data.map(function(d){return d.c;}),borderWidth:2,borderColor:"#08080f"}]},options:{responsive:true,plugins:{legend:{display:false}},cutout:"62%"}});
+    var leg=document.getElementById("donutL");
+    if(leg)leg.innerHTML=data.map(function(d){return'<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#9ca3af"><div style="width:10px;height:10px;border-radius:50%;background:'+d.c+'"></div>'+d.l+' — '+Math.round(d.v/inc*100)+'% ('+fl(d.v)+')</div>';}).join("");
+  },100);
+}
+
+function setSav(delta){
+  var v=parseFloat(document.getElementById("savAmt").value);
+  if(isNaN(v))return;
+  var sd=savingsDelta();
+  if(delta&&S.savBal!==null){S.savBal+=v;}
+  else{S.savBal=v-sd.added+sd.removed;}
+  svs();renderExtras();
+}
+
+// ── RENDER TRANSACTIONS ────────────────────────────────────────────────────────
+function renderTxn(){
+  var h='<div style="text-align:center;margin-bottom:14px"><h1 style="font-size:20px;font-weight:400;color:#f1f5f9">Tranzacții</h1><div style="font-size:11px;color:#6b7280">Mai 2026 · 04.05 – 30.05</div></div>';
+
+  // sort by date desc
+  var sorted=S.txn.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+
+  sorted.forEach(function(t){
+    var origIdx=S.txn.indexOf(t);
+    var cat=catById(t.cat);
+    var isIncome=t.credit;
+    var selectedOpts=CATS.map(function(c){return'<option value="'+c.id+'" '+(c.id===t.cat?"selected":"")+'>'+c.icon+' '+c.label+'</option>';}).join("");
+    h+='<div class="ti">';
+    h+='<div class="tic">'+(isIncome?"💚":cat.icon)+'</div>';
+    h+='<div style="flex:1;min-width:0">';
+    h+='<div class="tid">'+t.desc+'</div>';
+    h+='<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px">';
+    h+='<span class="db">'+t.date+'</span>';
+    h+='<select class="cs" style="background:'+cat.color+'22;color:'+cat.color+';border-color:'+cat.color+'44" onchange="chCat('+origIdx+',this.value)">'+selectedOpts+'</select>';
+    h+='</div></div>';
+    h+='<div class="tia '+(isIncome?"cr":"")+'">'+(isIncome?"+":"−")+t.amt.toFixed(2)+' RON</div>';
+    h+='</div>';
+  });
+
+  document.getElementById("page-txn").innerHTML=h;
+}
+
+function chCat(i,v){
+  S.txn[i].cat=v;
+  // if categorized as datorie_in, update debtor balance
+  if(v==="datorie_in"&&S.debtors.length>0){
+    // find debtor and subtract
+    var t=S.txn[i];
+    // ask user or auto-apply to first debtor
+    S.debtors[0].currentAmount=Math.max(0,S.debtors[0].currentAmount-t.amt);
+    svd();
+    renderDatorii();
+  }
+  svt();renderTxn();renderExtras();
+}
+
+// ── RENDER DATORII ─────────────────────────────────────────────────────────────
+function renderDatorii(){
+  var h='<div style="text-align:center;margin-bottom:20px"><h1 style="font-size:22px;font-weight:400;color:#f1f5f9">Bani de primit 🤝</h1></div>';
+
+  S.debtors.forEach(function(d,di){
+    var pctPaid=d.startAmount>0?Math.min(100,((d.startAmount-d.currentAmount)/d.startAmount)*100):0;
+    h+='<div class="card" style="border:1px solid rgba(110,231,183,0.2)">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+    h+='<div><div style="font-size:16px;font-weight:700;color:#e2e8f0">'+d.name+'</div>';
+    if(d.note)h+='<div style="font-size:11px;color:#6b7280;margin-top:2px">'+d.note+'</div>';
+    h+='</div><button class="br" onclick="removeDeb('+di+')">✕</button></div>';
+
+    h+='<div class="grid2" style="margin-bottom:12px">';
+    h+='<div style="text-align:center;background:rgba(239,68,68,0.06);border-radius:10px;padding:10px">';
+    h+='<div style="font-size:10px;color:#4b5563;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.1em">Datorie inițială</div>';
+    h+='<div style="font-size:18px;font-weight:700;color:#f87171">'+fl(d.startAmount)+'</div></div>';
+    h+='<div style="text-align:center;background:rgba(110,231,183,0.06);border-radius:10px;padding:10px">';
+    h+='<div style="font-size:10px;color:#4b5563;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.1em">Mai ai de primit</div>';
+    h+='<div style="font-size:18px;font-weight:700;color:#6ee7b7">'+fl(d.currentAmount)+'</div></div>';
+    h+='</div>';
+
+    h+='<div style="margin-bottom:8px">';
+    h+='<div style="display:flex;justify-content:space-between;font-size:11px;color:#4b5563;margin-bottom:4px"><span>Primit: '+fl(d.startAmount-d.currentAmount)+'</span><span>'+pctPaid.toFixed(0)+'%</span></div>';
+    h+='<div style="background:#0f1117;border-radius:100px;height:8px;overflow:hidden"><div style="height:100%;width:'+pctPaid+'%;background:linear-gradient(90deg,#6ee7b7,#10b981);border-radius:100px;transition:width .6s"></div></div></div>';
+
+    h+='<div style="font-size:11px;color:#6b7280;margin-bottom:6px">Înregistrează o plată primită:</div>';
+    h+='<div style="display:flex;gap:8px"><input type="number" id="deb'+di+'amt" placeholder="suma primită" style="flex:1;padding:8px 10px;font-size:13px"><button class="bg" style="padding:8px 14px;font-size:12px" onclick="payDeb('+di+')">Înregistrează</button></div>';
+    h+='</div>';
+  });
+
+  // Add debtor form
+  h+='<div class="card">';
+  h+='<span class="lbl">+ Adaugă persoană care îți datorează</span>';
+  h+='<div style="margin-bottom:8px"><input type="text" id="debName" placeholder="Numele persoanei"></div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+  h+='<input type="number" id="debAmt" placeholder="Suma (lei)">';
+  h+='<input type="text" id="debNote" placeholder="Notă"></div>';
+  h+='<button class="bg" style="width:100%" onclick="addDeb()">Adaugă</button></div>';
+
+  h+='<div class="card" style="background:rgba(245,200,66,0.04);border:1px solid rgba(245,200,66,0.15)">';
+  h+='<span class="lbl">💡 Cum funcționează</span>';
+  h+='<div style="font-size:12px;color:#6b7280;line-height:1.7">Când primești bani de la o persoană, mergi la tab-ul Tranzacții, găsești tranzacția și o etichetezi ca <strong style="color:#6ee7b7">Intrare Datorie</strong>. Suma se va scădea automat din datoria respectivei persoane.</div></div>';
+
+  document.getElementById("page-datorii").innerHTML=h;
+}
+
+function payDeb(di){
+  var inp=document.getElementById("deb"+di+"amt");
+  var v=parseFloat(inp.value);
+  if(isNaN(v)||v<=0)return;
+  S.debtors[di].currentAmount=Math.max(0,S.debtors[di].currentAmount-v);
+  svd();inp.value="";renderDatorii();
+}
+function removeDeb(di){if(confirm("Ștergi această persoană?"))S.debtors.splice(di,1);svd();renderDatorii();}
+function addDeb(){
+  var name=document.getElementById("debName").value.trim();
+  var amt=parseFloat(document.getElementById("debAmt").value);
+  var note=document.getElementById("debNote").value.trim();
+  if(!name||isNaN(amt)||amt<=0)return;
+  S.debtors.push({id:Date.now(),name:name,startAmount:amt,currentAmount:amt,note:note});
+  svd();renderDatorii();
+}
+
+// ── RENDER SETTINGS ────────────────────────────────────────────────────────────
+function renderSettings(){
+  var h='<div style="text-align:center;margin-bottom:20px"><h1 style="font-size:22px;font-weight:400;color:#f1f5f9">Setări credit</h1></div>';
+  h+='<div class="uzone"><input type="file" accept="application/pdf" onchange="uploadCreditPDF(this.files[0])">';
+  if(S.uploading)h+='<div style="color:#f5c842;font-size:13px;padding:10px 0">⟳ Procesez graficul BCR...</div>';
+  else h+='<div style="font-size:28px;margin-bottom:6px">📄</div><div style="font-size:13px;color:#9ca3af">Încarcă noul grafic de rambursare BCR</div><div style="font-size:11px;color:#4b5563;margin-top:3px">PDF · actualizează proiecția creditului</div>';
+  if(S.upMsg){h+='<div style="color:'+(S.upMsg[0]==="✅"?"#6ee7b7":"#f87171")+';font-size:12px;margin-top:8px">'+S.upMsg+'</div>';}
+  h+='</div>';
+
+  h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span class="lbl" style="margin-bottom:0">Rambursări anticipate</span><button class="bo" onclick="S.showAdd=!S.showAdd;renderSettings()">+ Adaugă</button></div>';
+  if(S.showAdd){
+    h+='<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;margin-bottom:14px">';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">';
+    h+='<div><div style="font-size:10px;color:#4b5563;margin-bottom:4px">Data</div><input type="date" id="nd"></div>';
+    h+='<div><div style="font-size:10px;color:#4b5563;margin-bottom:4px">Suma (lei)</div><input type="number" id="na" placeholder="7700"></div></div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">';
+    h+='<div><div style="font-size:10px;color:#4b5563;margin-bottom:4px">Luni tăiate</div><input type="number" id="nm" placeholder="0" min="0"></div>';
+    h+='<div><div style="font-size:10px;color:#4b5563;margin-bottom:4px">Notă</div><input type="text" id="nn" placeholder="Notă..."></div></div>';
+    h+='<button class="bg" style="width:100%" onclick="addPay()">Salvează</button></div>';
+  }
+  S.pay.forEach(function(p){
+    h+='<div class="pr"><div><div style="font-size:13px;color:#e2e8f0">'+p.note+'</div><div style="font-size:10px;color:#374151;margin-top:2px">'+p.date+(p.monthsCut?' · ✂️ '+p.monthsCut+' luni':'')+'</div></div>';
+    h+='<div style="display:flex;align-items:center;gap:10px"><div style="font-size:14px;color:#6ee7b7;font-weight:700">−'+fl(p.amount)+'</div>';
+    h+='<button class="br" onclick="remPay('+p.id+')">✕</button></div></div>';
+  });
+  h+='<div style="margin-top:12px;padding:10px;background:rgba(110,231,183,0.05);border:1px solid rgba(110,231,183,0.1);border-radius:8px;font-size:11px;color:#6ee7b7;text-align:center">💡 +7.700 lei/lună surplus inclus automat în proiecție</div></div>';
+  h+='<div style="text-align:center;font-size:10px;color:#1f2937;letter-spacing:0.15em;margin-top:8px">FIECARE LEU ANTICIPAT = O ZI MAI APROAPE DE LIBERTATE</div>';
+  document.getElementById("page-settings").innerHTML=h;
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────────
+function setTab(t){
+  S.tab=t;
+  document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});
+  document.querySelectorAll(".nb").forEach(function(b){b.classList.remove("active");});
+  document.getElementById("page-"+t).classList.add("active");
+  document.getElementById("nav-"+t).classList.add("active");
+  document.getElementById("content").scrollTop=0;
+  if(t==="home")renderHome();
+  if(t==="credit")renderCredit();
+  if(t==="extras")renderExtras();
+  if(t==="txn")renderTxn();
+  if(t==="datorii")renderDatorii();
+  if(t==="settings")renderSettings();
+}
+function setCredTab(t){S.credTab=t;renderCredit();}
+function saveQB(){
+  var nb=parseFloat(document.getElementById("qb").value);
+  if(isNaN(nb)||nb<0)return;
+  S.bal=nb;svc();
+  var btn=document.getElementById("saveBal");
+  if(btn){btn.textContent="✓ Salvat!";btn.style.background="#6ee7b7";}
+  setTimeout(function(){renderHome();},1500);
+}
+function addPay(){
+  var d=document.getElementById("nd").value;
+  var a=document.getElementById("na").value;
+  if(!d||!a)return;
+  var mc=parseInt(document.getElementById("nm").value)||0;
+  var note=document.getElementById("nn").value||"Rambursare anticipată";
+  S.pay.push({id:Date.now(),date:d,amount:Number(a),note:note,monthsCut:mc});
+  S.showAdd=false;svc();renderSettings();
+}
+function remPay(id){S.pay=S.pay.filter(function(p){return p.id!==id;});svc();renderSettings();}
+
+async function uploadCreditPDF(file){
+  if(!file||file.type!=="application/pdf"){S.upMsg="❌ PDF invalid";renderSettings();return;}
+  S.uploading=true;S.upMsg="";renderSettings();
+  try{
+    var b64=await new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result.split(",")[1]);};r.onerror=rej;r.readAsDataURL(file);});
+    var resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:4000,messages:[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}},{type:"text",text:"Grafic rambursare credit BCR. Returneaza DOAR JSON valid fara markdown:\n{\"currentBalance\":float,\"scheduleDate\":\"string\",\"rows\":[{\"nr\":int,\"date\":\"YYYY-MM-DD\",\"principal\":float,\"interest\":float,\"insurance\":float,\"total\":float,\"balance\":float}]}"}]},{role:"assistant",content:[{type:"text",text:"{"}]}]})});
+    var data=await resp.json();
+    var raw="{"+data.content.map(function(c){return c.text||"";}).join("").trim().replace(/^```[a-z]*\n?/i,"").replace(/```$/,"").trim();
+    if(raw.startsWith("{{"))raw=raw.slice(1);
+    var parsed=JSON.parse(raw);
+    if(!parsed.rows||!parsed.rows.length)throw new Error("Nu am gasit randuri.");
+    S.sched=parsed.rows;S.bal=parsed.currentBalance;S.sdate=parsed.scheduleDate||S.sdate;
+    svc();S.upMsg="✅ Grafic actualizat cu "+parsed.rows.length+" rate!";
+  }catch(e){
+    // retry without prefill
+    try{
+      var b64b=await new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result.split(",")[1]);};r.onerror=rej;r.readAsDataURL(file);});
+      var resp2=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:4000,messages:[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:b64b}},{type:"text",text:"Grafic rambursare credit BCR. Returneaza DOAR JSON valid fara markdown fara backtick-uri:\n{\"currentBalance\":float,\"scheduleDate\":\"string\",\"rows\":[{\"nr\":int,\"date\":\"YYYY-MM-DD\",\"principal\":float,\"interest\":float,\"insurance\":float,\"total\":float,\"balance\":float}]}"}]}]})});
+      var data2=await resp2.json();
+      var raw2=data2.content.map(function(c){return c.text||"";}).join("").trim().replace(/^```[a-z]*\n?/i,"").replace(/```$/,"").trim();
+      var parsed2=JSON.parse(raw2);
+      if(!parsed2.rows||!parsed2.rows.length)throw new Error("Nu am gasit randuri.");
+      S.sched=parsed2.rows;S.bal=parsed2.currentBalance;S.sdate=parsed2.scheduleDate||S.sdate;
+      svc();S.upMsg="✅ Grafic actualizat!";
+    }catch(e2){S.upMsg="❌ Eroare: "+e2.message;}
+  }
+  S.uploading=false;renderSettings();
+}
+
+async function handlePDF(e){
+  var file=e.target.files[0];if(!file)return;
+  document.getElementById("overlay").classList.add("show");
+  try{
+    var buf=await file.arrayBuffer();
+    var pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    var fullText="";
+    for(var i=1;i<=pdf.numPages;i++){
+      var page=await pdf.getPage(i);
+      var content=await page.getTextContent();
+      var byY={};
+      content.items.forEach(function(item){var y=Math.round(item.transform[5]);if(!byY[y])byY[y]=[];byY[y].push({x:item.transform[4],str:item.str});});
+      Object.keys(byY).sort(function(a,b){return b-a;}).forEach(function(y){fullText+=byY[y].sort(function(a,b){return a.x-b.x;}).map(function(i){return i.str;}).join(" ")+"\n";});
+    }
+    var result=parseBCR(fullText);
+    document.getElementById("overlay").classList.remove("show");
+    if(result.length>0){S.txn=result;svt();renderExtras();renderTxn();}
+  }catch(err){document.getElementById("overlay").classList.remove("show");console.error(err);}
+  e.target.value="";
+}
+
+function parseBCR(text){
+  var result=[];var blob=text.replace(/\n/g," ");
+  var dateRe=/(\d{2}-\d{2}-\d{4})\s+\d{2}:\d{2}/g;
+  var matches=Array.from(blob.matchAll(dateRe));
+  var idc=Date.now();
+  for(var i=0;i<matches.length;i++){
+    var start=matches[i].index;
+    var end=i+1<matches.length?matches[i+1].index:blob.length;
+    var blk=blob.substring(start,end);
+    var dateStr=matches[i][1];
+    if(blk.indexOf("Sold contabil")!==-1||blk.indexOf("Data operatiunii")!==-1)continue;
+    var amt=null,isC=false;
+    var crm=blk.match(/Tranz creditare[^,]*Suma\s+([\d\s]+[.,]\d{2})\s*RON/);
+    var spm=blk.match(/Suma platita\s+([\d\s]+[.,]\d{2})\s*RON/);
+    var svm=blk.match(/Suma in valuta contului\s+([\d\s]+[.,]\d{2})\s*RON/);
+    // also match credit transfers
+    var crAmt=blk.match(/0[,]00\s+(\d{1,3}(?:[.]\d{3})*[,]\d{2})\b/);
+    var dbAmt=blk.match(/\b(\d{1,3}(?:[.]\d{3})*[,]\d{2})\s+0[,]00\b/);
+    if(crm){amt=parseFloat(crm[1].replace(/\s/g,"").replace(",","."));isC=true;}
+    else if(spm){amt=parseFloat(spm[1].replace(/\s/g,"").replace(",","."));}
+    else if(svm){amt=parseFloat(svm[1].replace(/\s/g,"").replace(",","."));}
+    else if(crAmt){amt=parseFloat(crAmt[1].replace(".","").replace(",","."));isC=true;}
+    else if(dbAmt){amt=parseFloat(dbAmt[1].replace(".","").replace(",","."));}
+    if(!amt||isNaN(amt)||amt<0.5)continue;
+    var desc="Tranzacție",cat="altele";
+    if(blk.indexOf("Google Pay")!==-1)desc="Google Pay";
+    if(blk.indexOf("M4M")!==-1)desc="M4M";
+    if(blk.indexOf("Incasare rata credit")!==-1){desc="Rata credit";cat="credit";}
+    else if(blk.indexOf("Incasare rata dobanda")!==-1){desc="Dobândă credit";cat="credit";}
+    else if(blk.indexOf("Incasare Cost Asigurare")!==-1){desc="Asigurare credit";cat="credit";}
+    else if(blk.indexOf("Rambursare Credit curent")!==-1){desc="Rambursare anticipată";cat="rambursare";}
+    else if(blk.indexOf("Rambursare Dobanda")!==-1){desc="Rambursare dobândă";cat="credit";}
+    else if(blk.indexOf("SALARIU")!==-1||blk.indexOf("DB GLOBAL TECHNOLOGY")!==-1){desc="Salariu";isC=true;cat="salariu";}
+    else if(blk.indexOf("Money reserve")!==-1){desc="Transfer Economii";cat=isC?"alte_intrari":"economii";}
+    else if(blk.indexOf("Scarlat Milica")!==-1||blk.indexOf("SCARLAT MILICA")!==-1){desc="Cadou - Scarlat Milica";isC=true;cat="alte_intrari";}
+    else if(blk.indexOf("Scarlat Adrian")!==-1||blk.indexOf("SCARLAT ANAMARIA")!==-1&&isC){desc="Intrare - Scarlat Adrian-Daniel";isC=true;cat="alte_intrari";}
+    else if(blk.indexOf("Comision conversie")!==-1){desc="Comision conversie";cat="altele";}
+    // get merchant
+    var lm=blk.match(/Locatie:[\s\S]*?RO\s+([A-Z0-9][^\n\.\,]{2,40}?)(?:\s+(?:Bucuresti|BUCURESTI|Cluj|Iasi|Dublin|Amsterdam|Cork|London|Voluntari|Tulcea|Cepari|Napoca))/);
+    if(lm&&desc==="Google Pay")desc="Google Pay - "+lm[1].trim();
+    else if(lm&&desc==="M4M")desc="M4M - "+lm[1].trim();
+    else if(lm&&desc==="Tranzacție")desc=lm[1].trim();
+    if(cat==="altele")cat=autocat(desc+" "+blk.toLowerCase());
+    if(isC&&cat==="altele")cat="alte_intrari";
+    result.push({id:idc++,date:dateStr,desc:desc,amt:amt,credit:isC,cat:cat});
+  }
+  return result;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+load();
+renderHome();
+renderTxn();
+</script>
+</body>
+</html>
